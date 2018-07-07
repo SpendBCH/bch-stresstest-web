@@ -15,7 +15,7 @@ class App extends Component {
   constructor(props) {
     super(props)
 
-    this.state = { 
+    this.state = {
       wallet: null,
      }
   }
@@ -43,7 +43,7 @@ class App extends Component {
     // Serialize wallet and store in localstorage
     localStorage.setItem('mnemonic', JSON.stringify(wallet.mnemonic))
 
-    wallet.listen((res) => { 
+    wallet.listen((res) => {
       this.setState({ wallet: res.wallet })
     })
 
@@ -54,10 +54,13 @@ class App extends Component {
     return (
       <div className="App">
         <Header /> <br/>
+        <hr/>
         <div>
           <Wallet wallet={this.state.wallet} createWallet={this.createWallet} recoverOrphanUtxos={this.recoverOrphanUtxos} />
-          <br/>
+          <hr/>
           <Stresstest wallet={this.state.wallet} startStresstest={this.startStresstest} />
+        </div>
+        <div>
         </div>
       </div>
     );

@@ -25,6 +25,7 @@ const classStyles = theme => ({
   button: {
     margin: theme.spacing.unit,
     marginLeft: 0,
+    background: '#F59332' 
   },
   cardActions: {
     paddingLeft: 0,
@@ -80,7 +81,7 @@ class Wallet extends Component {
 
   handleCreateWallet = (event) => {
     event.preventDefault()
-    
+
     this.props.createWallet()
   }
 
@@ -114,10 +115,10 @@ class Wallet extends Component {
                 { this.props.wallet.canRecoverFunds ? "Lost funds found. Please attempt to recover before starting a stresstest" : "" }
               </Typography>
               <CardActions className={classes.cardActions}>
-              <Button 
-                variant="contained" 
-                color="secondary" 
-                className={classes.button} 
+              <Button
+                variant="contained"
+                color="primary"
+                className={classes.button}
                 onClick={this.props.recoverOrphanUtxos}
                 disabled={ !this.props.wallet.canRecoverFunds }
               >

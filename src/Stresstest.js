@@ -6,6 +6,7 @@ import Button from '@material-ui/core/Button'
 import CardActions from '@material-ui/core/CardActions'
 import Grid from '@material-ui/core/Grid'
 import LinearProgress from '@material-ui/core/LinearProgress'
+import Credits from './Credits'
 
 const classStyles = theme => ({
   root: {
@@ -20,6 +21,7 @@ const classStyles = theme => ({
   button: {
     margin: theme.spacing.unit,
     marginLeft: 0,
+    background: '#F59332' 
   },
   cardActions: {
     paddingLeft: 0,
@@ -112,16 +114,20 @@ class Stresstest extends Component {
           <LinearProgress variant="determinate" value={this.getStresstestCompletePercent()} />
         </div>
         <CardActions className={classes.cardActions}>
-          <Button 
-            variant="contained" 
-            color="primary" 
-            className={classes.button} 
+          <Button
+            variant="contained"
+            color="primary"
+            className={classes.button}
             onClick={ this.startNewStresstest }
-            disabled={ this.getStresstestCompletePercent() != 100 ? true : false } 
+            disabled={ this.getStresstestCompletePercent() != 100 ? true : false }
           >
             Start New Stresstest
           </Button>
         </CardActions>
+        <div>
+          <b>Mempool Size: </b> { this.props.wallet.mempoolSize } transactions
+        </div>
+        <Credits></Credits>
       </Paper>
     </div>);
   }
@@ -148,16 +154,17 @@ class Stresstest extends Component {
           </Grid>
         </div>
         <CardActions className={classes.cardActions}>
-          <Button 
-            variant="contained" 
-            color="primary" 
-            className={classes.button} 
-            onClick={this.startStresstest} 
+          <Button
+            variant="contained"
+            color="primary"
+            className={classes.button}
+            onClick={this.startStresstest}
             disabled={ numTxToSend == 0 ? true : false }
           >
             Start Stresstest
           </Button>
         </CardActions>
+        <Credits></Credits>
       </Paper>
     </div>);
   }

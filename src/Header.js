@@ -9,6 +9,10 @@ const classStyles = theme => ({
   root: {
     flexGrow: 1,
   },
+  logo: {
+    width: '100px',
+    paddingLeft: '24px'
+  }
 });
 
 class Header extends Component {
@@ -22,6 +26,7 @@ class Header extends Component {
     return (
       <div className={classes.root}>
         <AppBar position="static" color="default">
+          <img className={classes.logo} src='3-bitcoin-cash-logo-ot-small.png' />
           <Toolbar>
             <Typography variant="title" color="inherit">
               Stresstest BCH

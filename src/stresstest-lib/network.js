@@ -40,9 +40,9 @@ class Network {
           while (true) {
             // rate limit
             await sleep(10 * 1000)
-    
+
             let utxos = await this.getAllUtxo(address)
-    
+
             // return highest value utxo when first utxo is found
             if (utxos && utxos.length > 0) {
               let utxo = utxos.sort((a, b) => { return a.satoshis - b.satoshis })[utxos.length - 1]
@@ -76,25 +76,25 @@ class Network {
                 }
 
                 let transactionBuilder = new BITBOX.TransactionBuilder('bitcoincash')
-        
+
                 let totalUtxoAmount = 0
-                utxos.forEach((utxo) => { 
+                utxos.forEach((utxo) => {
                     transactionBuilder.addInput(utxo.txid, utxo.vout)
                     totalUtxoAmount += utxo.satoshis
                 })
-        
+
                 let byteCount = BITBOX.BitcoinCash.getByteCount({ P2PKH: utxos.length }, { P2PKH: 1 })
                 let satoshisAfterFee = totalUtxoAmount - byteCount
 
                 transactionBuilder.addOutput(wallet.address, satoshisAfterFee)
-        
+
                 let key = BITBOX.ECPair.fromWIF(wallet.wif)
-                
+
                 let redeemScript
                 utxos.forEach((utxo, index) => {
                     transactionBuilder.sign(index, key, redeemScript, transactionBuilder.hashTypes.SIGHASH_ALL, utxo.satoshis)
                 })
-        
+
                 let hex = transactionBuilder.build().toHex()
                 await this.sendTxAsync(hex)
 
@@ -144,15 +144,15 @@ class Network {
                     }
 
                     if (foundAllUtxos) break
-                    
+
                     index += stepIndexBy
                 }
 
                 let transactionBuilder = new BITBOX.TransactionBuilder('bitcoincash')
-        
+
                 let totalInputSatoshis = 0
                 let totalUtxos = 0
-                utxosByNode.forEach((utxosNode) => { 
+                utxosByNode.forEach((utxosNode) => {
                     let utxos = utxosNode.utxos
                     utxos.forEach((utxo) => {
                         transactionBuilder.addInput(utxo.txid, utxo.vout)
@@ -160,15 +160,15 @@ class Network {
                         totalUtxos += 1
                     })
                 })
-        
+
                 let byteCount = BITBOX.BitcoinCash.getByteCount({ P2PKH: totalUtxos }, { P2PKH: 1 })
                 let satoshisAfterFee = totalInputSatoshis - byteCount
 
                 transactionBuilder.addOutput(recoverAddress, satoshisAfterFee)
-        
+
                 let redeemScript
                 let inputIndex = 0
-                utxosByNode.forEach((utxosNode) => { 
+                utxosByNode.forEach((utxosNode) => {
                     let node = utxosNode.node
                     let utxos = utxosNode.utxos
                     let key = BITBOX.HDNode.toKeyPair(node)
@@ -177,7 +177,7 @@ class Network {
                         inputIndex += 1
                     })
                 })
-        
+
                 let hex = transactionBuilder.build().toHex()
                 await this.sendTxAsync(hex)
 
@@ -251,9 +251,9 @@ class Network {
           try {
             // rate limit
             await sleep(30 * 1000)
-    
+
             let txDetails = await this.getTxDetails(txid)
-    
+
             // return highest value utxo when first utxo is found
             if (txDetails && txDetails.confirmations > 0)
               return txDetails
@@ -299,7 +299,7 @@ class Network {
               break
             }
           }
-    
+
           resolve(totalSent)
         })
       }
@@ -316,6 +316,24 @@ class Network {
         }
         console.log("Sent " + totalSent + " transactions successfully")
       }
+
+    static async getMempoolInfo() {
+        // throttle calls to api
+        await sleep(1100)
+
+        return new Promise((resolve, reject) => {
+            BITBOX.Blockchain.getMempoolInfo().then((result) => {
+                if(result && result.size) {
+                    resolve(result.size)
+                } else {
+                    resolve('No Result. Trying again...')
+                }
+            }, (err) => {
+                console.log(err)
+                reject(err)
+            })
+        })
+    }
 }
 
 export default Network
