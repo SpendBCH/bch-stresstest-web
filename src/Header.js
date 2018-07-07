@@ -29,7 +29,7 @@ class Header extends Component {
           <img className={classes.logo} src='3-bitcoin-cash-logo-ot-small.png' />
           <Toolbar>
             <Typography variant="title" color="inherit">
-              Stresstest BCH
+              scale.cash
             </Typography>
           </Toolbar>
         </AppBar>

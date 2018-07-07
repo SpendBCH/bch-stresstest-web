@@ -12,8 +12,10 @@ class Network {
 
         return new Promise((resolve, reject) => {
             BITBOX.Address.utxo(address).then((result) => {
-                let utxo = result.sort((a, b) => { return a.satoshis - b.satoshis })[result.length - 1]
-                resolve(utxo)
+                try {
+                    let utxo = result.sort((a, b) => { return a.satoshis - b.satoshis })[result.length - 1]
+                    resolve(utxo)
+                } catch (ex) { reject(ex) }
             }, (err) => {
                 console.log(err)
                 reject(err)
@@ -195,10 +197,12 @@ class Network {
 
         return new Promise((resolve, reject) => {
             BITBOX.Address.details(address).then((result) => {
-                if (result.transactions && result.transactions.length)
-                    resolve(result.transactions[0])
-                else
-                    resolve(null)
+                try {
+                    if (result.transactions && result.transactions.length)
+                        resolve(result.transactions[0])
+                    else
+                        resolve(null)
+                } catch (ex) { reject(ex) }
             }, (err) => {
                 console.log(err)
                 reject(err)
@@ -271,13 +275,15 @@ class Network {
 
         return new Promise((resolve, reject) => {
             BITBOX.RawTransactions.sendRawTransaction(hex).then((result) => {
-                console.log("txid: ", result)
-                if (result.length != 64) { // TODO: Validate result is a txid
-                    reject("Transaction failed: " + result)
-                }
-                else {
-                    resolve(result)
-                }
+                try {
+                    console.log("txid: ", result)
+                    if (result.length != 64) { // TODO: Validate result is a txid
+                        reject("Transaction failed: " + result)
+                    }
+                    else {
+                        resolve(result)
+                    }
+                } catch (ex) { reject(ex) }
             }, (err) => {
                 console.log(err)
                 reject(err)
@@ -323,11 +329,13 @@ class Network {
 
         return new Promise((resolve, reject) => {
             BITBOX.Blockchain.getMempoolInfo().then((result) => {
-                if(result && result.size) {
-                    resolve(result.size)
-                } else {
-                    resolve('No Result. Trying again...')
-                }
+                try {
+                    if(result && result.size) {
+                        resolve(result.size)
+                    } else {
+                        resolve('No Result. Trying again...')
+                    }
+                } catch (ex) { reject(ex) }
             }, (err) => {
                 console.log(err)
                 reject(err)

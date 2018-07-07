@@ -101,8 +101,13 @@ class StresstestWallet {
 
     pollForMempoolinfo = async () => {
         while (true) {
-          this.mempoolSize = await network.getMempoolInfo()
-          this.publish()
+          try {
+            this.mempoolSize = await network.getMempoolInfo()
+            this.publish()
+          } catch (ex) { 
+            // Backoff a few seconds after failure
+            await sleep(3300)
+          }
         }
     }
 
@@ -235,7 +240,14 @@ class StresstestWallet {
         let walletChains = splitAddressResult.wallets
 
         // Broadcast split tx
-        let splitTxid = await network.sendTxAsync(splitTxHex)
+        let splitTxid
+        while (true) {
+          try {
+            splitTxid = await network.sendTxAsync(splitTxHex)
+            break
+          } catch (ex) {}
+          await sleep(3300)
+        }
         this.appendLog("Split tx completed. Txid: " + splitTxid)
 
         // Generate transactions for each address

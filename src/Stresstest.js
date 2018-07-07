@@ -95,8 +95,8 @@ class Stresstest extends Component {
   renderStresstest = () => {
     const { classes } = this.props
 
-    let log = this.props.wallet.log.slice(0).map(l => {
-      return <div key={l}>{l}</div>
+    let log = this.props.wallet.log.slice(0).map((l, index) => {
+      return <div key={index}>{l}</div>
     })
 
     return (<div>
