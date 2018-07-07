@@ -39,12 +39,14 @@ class StresstestWallet {
         this.log = []
 
         this.totalTxSent = 0
+        this.mempoolSize = 0
         this.txSentThisRun = 0
 
         // Look for funds to recover
         this.canRecoverFunds = false
         this.searchForOrphanUtxos(this.hdNode)
         this.pollForDeposit()
+        this.pollForMempoolinfo()
     }
 
     listen = (listener) => {
@@ -66,7 +68,7 @@ class StresstestWallet {
     }
 
     pollForDeposit = async () => {
-        if (this.isPollingForDeposit) 
+        if (this.isPollingForDeposit)
             return
 
         this.isPollingForDeposit = true
@@ -97,12 +99,19 @@ class StresstestWallet {
         }
     }
 
+    pollForMempoolinfo = async () => {
+        while (true) {
+          this.mempoolSize = await network.getMempoolInfo()
+          this.publish()
+        }
+    }
+
     searchForOrphanUtxos = async (hdNode) => {
         let node1 = BITBOX.HDNode.derivePath(hdNode, `1/${1}`)
         let nodeAddress1 = BITBOX.HDNode.toLegacyAddress(node1)
         let node2 = BITBOX.HDNode.derivePath(hdNode, `1/${2}`)
         let nodeAddress2 = BITBOX.HDNode.toLegacyAddress(node2)
-    
+
         let utxos = await network.getAllUtxo([nodeAddress1, nodeAddress2])
 
         if (utxos.length > 0 && utxos[0].length > 0)
@@ -117,7 +126,7 @@ class StresstestWallet {
         try {
             // Merge utxos to recover address
             await network.recoverUtxosByNode(this.hdNode, recoverAddress)
-            
+
             this.canRecoverFunds = false
             this.publish()
 
@@ -228,7 +237,7 @@ class StresstestWallet {
         // Broadcast split tx
         let splitTxid = await network.sendTxAsync(splitTxHex)
         this.appendLog("Split tx completed. Txid: " + splitTxid)
-        
+
         // Generate transactions for each address
         let hexListByAddress = stUtils.createChainedTransactions(walletChains, refundAddress)
 
@@ -241,7 +250,7 @@ class StresstestWallet {
         // flatten array
         let allTxToSend = [].concat(...hexListByAddress)
         this.numTxToSend = allTxToSend.length
-        
+
         // send each tx
         for (let i=0; i< allTxToSend.length; i++) {
             // Must send all tx in order, backoff request rate until sent

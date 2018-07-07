@@ -1,36 +1,31 @@
 body {
   /* color: white; */
-  background-color: rgb(158, 158, 158);
+  /* background-color: rgb(158, 158, 158); */
   padding: 50px;
 }
 
-/* .App {
-  color: white;
-  background-color: gray;
-} */
-
-/*
-.App-logo {
-  animation: App-logo-spin infinite 20s linear;
-  height: 80px;
+.MuiAppBar-colorDefault-8, .MuiPaper-root-10 {
+  background-color: white !important;
 }
 
-.App-header {
-  background-color: #222;
-  height: 150px;
-  padding: 20px;
-  color: white;
+.MuiPaper-elevation4-17, .MuiPaper-elevation3-16 {
+  box-shadow: none !important;
 }
 
-.App-title {
-  font-size: 1.5em;
+.credits a {
+  text-decoration: none;
+  color: #F59332;
 }
 
-.App-intro {
-  font-size: large;
+.MuiButton-containedPrimary-83:hover, .MuiButton-containedSecondary-84:hover {
+  background-color: #4D4D4D !important;
 }
 
-@keyframes App-logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-} */
+
+.MuiLinearProgress-colorPrimary-232, .MuiLinearProgress-colorPrimary-233 {
+  background-color: #f5933269 !important;
+}
+
+.MuiLinearProgress-barColorPrimary-240, .MuiLinearProgress-barColorPrimary-241 {
+  background-color: #4D4D4D !important;
+}
