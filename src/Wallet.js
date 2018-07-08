@@ -12,12 +12,14 @@ import Collapse from '@material-ui/core/Collapse'
 import CardContent from '@material-ui/core/CardContent'
 import Grid from '@material-ui/core/Grid'
 
+
 const classStyles = theme => ({
   root: {
     ...theme.mixins.gutters(),
     paddingTop: theme.spacing.unit * 2,
     paddingBottom: theme.spacing.unit * 2,
-    //maxWidth: 600,
+    backgroundColor: '#fff',
+    boxShadow: 'none'
   },
   progress: {
     flexGrow: 1,
@@ -25,7 +27,10 @@ const classStyles = theme => ({
   button: {
     margin: theme.spacing.unit,
     marginLeft: 0,
-    background: '#F59332' 
+    background: '#F59332',
+    '&:hover': {
+      background: '#4D4D4D'
+    }
   },
   cardActions: {
     paddingLeft: 0,

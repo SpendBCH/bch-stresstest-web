@@ -3,8 +3,8 @@ import React, { Component } from 'react'
 class Credits extends Component {
   render() {
     return (
-      <div className='credits'>
-        Created by <a href='https://twitter.com/SpendBCH_io'>@SpendBCH_io</a>. Made with <a href='https://www.bitbox.earth/'>BITBOX</a>
+      <div>
+        Created by <a className={this.props.classes.credits} href='https://twitter.com/SpendBCH_io'>@SpendBCH_io</a>. Made with <a className={this.props.classes.credits} href='https://www.bitbox.earth/'>BITBOX</a>
       </div>
     );
   }
