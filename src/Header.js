@@ -9,6 +9,10 @@ const classStyles = theme => ({
   root: {
     flexGrow: 1,
   },
+  header: {
+    backgroundColor: '#fff',
+    boxShadow: 'none'
+  },
   logo: {
     width: '100px',
     paddingLeft: '24px'
@@ -16,19 +20,15 @@ const classStyles = theme => ({
 });
 
 class Header extends Component {
-  constructor(props) {
-    super(props)
-  }
-
   render() {
     const { classes } = this.props
 
     return (
       <div className={classes.root}>
-        <AppBar position="static" color="default">
-          <img className={classes.logo} src='3-bitcoin-cash-logo-ot-small.png' />
+        <AppBar position="static" className={classes.header}>
+          <img className={classes.logo} src='3-bitcoin-cash-logo-ot-small.png' alt='Bitcoin Cash logo' />
           <Toolbar>
-            <Typography variant="title" color="inherit">
+            <Typography variant="title">
               scale.cash
             </Typography>
           </Toolbar>

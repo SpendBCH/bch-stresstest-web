@@ -75,11 +75,11 @@ class Network {
             try {
                 let utxos = await this.getAllUtxo(wallet.address)
 
-                if (!utxos || utxos.length == 0) {
+                if (!utxos || utxos.length === 0) {
                     resolve(0)
                     return
                 }
-                if (utxos.length == 1) {
+                if (utxos.length === 1) {
                     resolve(utxos[0].satoshis)
                     return
                 }
@@ -144,11 +144,11 @@ class Network {
                     let utxosByAddress = await this.getAllUtxo(addresses)
 
                     let foundAllUtxos = false
-                    for (var i=0; i<utxosByAddress.length; i++) {
-                        if (utxosByAddress[i].length > 0) {
+                    for (var j=0; j<utxosByAddress.length; j++) {
+                        if (utxosByAddress[j].length > 0) {
                             utxosByNode.push({
-                                node: nodes[i],
-                                utxos: utxosByAddress[i]
+                                node: nodes[j],
+                                utxos: utxosByAddress[j]
                             })
                         } else {
                             foundAllUtxos = true
@@ -288,7 +288,7 @@ class Network {
             BITBOX.RawTransactions.sendRawTransaction(hex).then((result) => {
                 try {
                     console.log("txid: ", result)
-                    if (result.length != 64) { // TODO: Validate result is a txid
+                    if (result.length !== 64) { // TODO: Validate result is a txid
                         reject("Transaction failed: " + result)
                     }
                     else {
@@ -336,7 +336,7 @@ class Network {
 
     static async getMempoolInfo() {
         // throttle calls to api
-        await sleep(1100)
+        await sleep(3000)
 
         return new Promise((resolve, reject) => {
             BITBOX.Blockchain.getMempoolInfo().then((result) => {

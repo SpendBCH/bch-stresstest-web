@@ -13,7 +13,8 @@ const classStyles = theme => ({
     ...theme.mixins.gutters(),
     paddingTop: theme.spacing.unit * 2,
     paddingBottom: theme.spacing.unit * 2,
-    //maxWidth: 600,
+    backgroundColor: '#fff',
+    boxShadow: 'none'
   },
   progress: {
     flexGrow: 1,
@@ -21,7 +22,10 @@ const classStyles = theme => ({
   button: {
     margin: theme.spacing.unit,
     marginLeft: 0,
-    background: '#F59332' 
+    background: '#F59332',
+    '&:hover': {
+      background: '#4D4D4D'
+    }
   },
   cardActions: {
     paddingLeft: 0,
@@ -47,6 +51,15 @@ const classStyles = theme => ({
   log: {
     height: 400,
     overflow: "scroll",
+  },
+  credits: {
+    textDecoration: 'none',
+    color: '#F59332',
+    transition: '0.4s',
+    '&:hover': {
+      color: '#4D4D4D',
+      transition: '0.4s'
+    }
   }
 })
 
@@ -111,7 +124,13 @@ class Stresstest extends Component {
           <b>Total Sent: </b> { this.props.wallet.totalTxSent }
         </div>
         <div className={classes.progress}>
-          <LinearProgress variant="determinate" value={this.getStresstestCompletePercent()} />
+          <LinearProgress classes={{
+              colorPrimary: '#f5933269',
+              barColorPrimary: '#4D4D4D', 
+            }}
+            variant="determinate"
+            value={this.getStresstestCompletePercent()}
+          />
         </div>
         <CardActions className={classes.cardActions}>
           <Button
@@ -119,7 +138,7 @@ class Stresstest extends Component {
             color="primary"
             className={classes.button}
             onClick={ this.startNewStresstest }
-            disabled={ this.getStresstestCompletePercent() != 100 ? true : false }
+            disabled={ this.getStresstestCompletePercent() !== 100 ? true : false }
           >
             Start New Stresstest
           </Button>
@@ -127,13 +146,13 @@ class Stresstest extends Component {
         <div>
           <b>Mempool Size: </b> { this.props.wallet.mempoolSize } transactions
         </div>
-        <Credits></Credits>
       </Paper>
+      <Credits classes={classes}></Credits>
     </div>);
   }
 
   renderReady = () => {
-    const { classes } = this.props
+      const { classes } = this.props
 
     let numTxToSend = this.props.wallet ? this.props.wallet.getNumTxToSend() : 0
     let headerMessage = numTxToSend > 0 ? "Ready to send " + numTxToSend + " transactions" : "Deposit at least 15k sats to start"
@@ -159,13 +178,13 @@ class Stresstest extends Component {
             color="primary"
             className={classes.button}
             onClick={this.startStresstest}
-            disabled={ numTxToSend == 0 ? true : false }
+            disabled={ numTxToSend === 0 ? true : false }
           >
             Start Stresstest
           </Button>
         </CardActions>
-        <Credits></Credits>
       </Paper>
+      <Credits classes={classes}></Credits>
     </div>);
   }
 

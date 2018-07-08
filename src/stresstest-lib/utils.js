@@ -35,7 +35,7 @@ class Utils {
     let hash = BITBOX.Crypto.hash256(buffer).toString('hex')
     return hash.match(/[a-fA-F0-9]{2}/g).reverse().join('')
   }
-	
+
 	static splitAddress(wallet, numAddresses, satsPerAddress, hdNode, node0, changeAddress, satsChange, maxTxChain) {
     let transactionBuilder = new BITBOX.TransactionBuilder(window.scaleCashSettings.networkString);
     transactionBuilder.addInput(wallet.txid, wallet.vout);
@@ -63,7 +63,7 @@ class Utils {
 
     // write stresstestbitcoin.cash to the chain w/ OP_RETURN
     transactionBuilder.addOutput(opReturnTagBuffer, 0);
-    
+
     // Check change against dust limit
     if (satsChange >= 546) {
       transactionBuilder.addOutput(changeAddress, satsChange)
@@ -110,7 +110,7 @@ class Utils {
       }
       hexByAddress.push(hexList.slice())
 		}
-    
+
     let finalMergeTx = this.createFinalMergeTx(walletChains, refundAddress)
     hexByAddress.push([finalMergeTx])
 
@@ -130,7 +130,7 @@ class Utils {
     let satoshisAfterFee = wallet.satoshis - byteCount
 
 		transactionBuilder.addOutput(targetAddress, satoshisAfterFee)
-		
+
     // write stresstestbitcoin.cash to the chain w/ OP_RETURN
     transactionBuilder.addOutput(opReturnTagBuffer, 0);
 
@@ -143,7 +143,7 @@ class Utils {
 
     return { txid: txid, satoshis: satoshisAfterFee, vout: 0, hex: hex }
 	}
-	
+
 	static createFinalMergeTx(walletChains, targetAddress) {
 		let transactionBuilder = new BITBOX.TransactionBuilder(window.scaleCashSettings.networkString)
 		
@@ -159,7 +159,7 @@ class Utils {
     let satoshisAfterFee = totalInputSatoshis - byteCount
 
 		transactionBuilder.addOutput(targetAddress, satoshisAfterFee)
-		
+
     // write stresstestbitcoin.cash to the chain w/ OP_RETURN
     transactionBuilder.addOutput(opReturnTagBuffer, 0);
 
@@ -169,11 +169,7 @@ class Utils {
 			transactionBuilder.sign(index, wallet.keyPair, redeemScript, transactionBuilder.hashTypes.SIGHASH_ALL, wallet.satoshis)
 		})
 
-    let hex = transactionBuilder.build().toHex()
-
-    let txid = this.txidFromHex(hex)
-
-    return hex
+    return transactionBuilder.build().toHex()
   }
 
 }
