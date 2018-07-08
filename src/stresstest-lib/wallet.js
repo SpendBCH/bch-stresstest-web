@@ -2,8 +2,17 @@ import stUtils from './utils'
 import network from './network'
 
 let BITBOXCli = require('bitbox-cli/lib/bitbox-cli').default;
-let BITBOX = new BITBOXCli();
+let BITBOX
+if (window.scaleCashSettings.isTestnet) {
+  BITBOX = new BITBOXCli({
+    restURL: 'https://trest.bitbox.earth/v1/'
+  })
+} else {
+  BITBOX = new BITBOXCli();
+}
+
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+const maxAddresses = 200
 
 class StresstestWallet {
     constructor(mnemonic) {
@@ -14,7 +23,7 @@ class StresstestWallet {
         this.mnemonic = mnemonic
 
         let rootSeed = BITBOX.Mnemonic.toSeed(mnemonic)
-        let masterHDNode = BITBOX.HDNode.fromSeed(rootSeed, 'bitcoincash')
+        let masterHDNode = BITBOX.HDNode.fromSeed(rootSeed, window.scaleCashSettings.networkString)
         this.hdNode = BITBOX.HDNode.derivePath(masterHDNode, "m/44'/145'/0'")
         this.node0 = BITBOX.HDNode.derivePath(this.hdNode, "0/0")
         this.node0WIF = BITBOX.ECPair.toWIF(BITBOX.HDNode.toKeyPair(this.node0))
@@ -119,7 +128,7 @@ class StresstestWallet {
 
         let utxos = await network.getAllUtxo([nodeAddress1, nodeAddress2])
 
-        if (utxos.length > 0 && utxos[0].length > 0)
+        if (utxos !== undefined && utxos.length > 0 && utxos[0].length > 0)
             this.canRecoverFunds = true
         else
             this.canRecoverFunds = false
@@ -158,7 +167,6 @@ class StresstestWallet {
         let numAddresses = Math.floor((wallet.satoshis) / (satsPerAddress + splitFeePerAddress))
 
         // Check for max tx size limit
-        let maxAddresses = 2900
         if (numAddresses > maxAddresses)
         numAddresses = maxAddresses
 
@@ -216,7 +224,6 @@ class StresstestWallet {
         let numAddresses = Math.floor((wallet.satoshis) / (satsPerAddress + splitFeePerAddress))
 
         // Check for max tx size limit
-        let maxAddresses = 2900
         if (numAddresses > maxAddresses)
         numAddresses = maxAddresses
 

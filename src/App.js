@@ -22,7 +22,12 @@ class App extends Component {
 
   componentDidMount() {
     // Import wallet if stored locally
-    let mnemonic = JSON.parse(localStorage.getItem('mnemonic'))
+    let mnemonic
+    if (window.scaleCashSettings.isTestnet) {
+      mnemonic = JSON.parse(localStorage.getItem('testnetMnemonic'))
+    } else {
+      mnemonic = JSON.parse(localStorage.getItem('mnemonic'))
+    }
     if (mnemonic != null) {
       this.createWallet(mnemonic)
     }
@@ -41,7 +46,11 @@ class App extends Component {
     let wallet = new StresstestWallet(mnemonic)
 
     // Serialize wallet and store in localstorage
-    localStorage.setItem('mnemonic', JSON.stringify(wallet.mnemonic))
+    if (window.scaleCashSettings.isTestnet) {
+      localStorage.setItem('testnetMnemonic', JSON.stringify(wallet.mnemonic))
+    } else {
+      localStorage.setItem('mnemonic', JSON.stringify(wallet.mnemonic))
+    }
 
     wallet.listen((res) => {
       this.setState({ wallet: res.wallet })

@@ -1,5 +1,12 @@
 let BITBOXCli = require('bitbox-cli/lib/bitbox-cli').default;
-let BITBOX = new BITBOXCli();
+let BITBOX
+if (window.scaleCashSettings.isTestnet) {
+  BITBOX = new BITBOXCli({
+    restURL: 'https://trest.bitbox.earth/v1/'
+  })
+} else {
+  BITBOX = new BITBOXCli();
+}
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -77,7 +84,7 @@ class Network {
                     return
                 }
 
-                let transactionBuilder = new BITBOX.TransactionBuilder('bitcoincash')
+                let transactionBuilder = new BITBOX.TransactionBuilder(window.scaleCashSettings.networkString)
 
                 let totalUtxoAmount = 0
                 utxos.forEach((utxo) => {
@@ -86,6 +93,10 @@ class Network {
                 })
 
                 let byteCount = BITBOX.BitcoinCash.getByteCount({ P2PKH: utxos.length }, { P2PKH: 1 })
+
+                // testnet fees
+                if (window.scaleCashSettings.isTestnet) byteCount *= 15
+                
                 let satoshisAfterFee = totalUtxoAmount - byteCount
 
                 transactionBuilder.addOutput(wallet.address, satoshisAfterFee)
@@ -150,7 +161,7 @@ class Network {
                     index += stepIndexBy
                 }
 
-                let transactionBuilder = new BITBOX.TransactionBuilder('bitcoincash')
+                let transactionBuilder = new BITBOX.TransactionBuilder(window.scaleCashSettings.networkString)
 
                 let totalInputSatoshis = 0
                 let totalUtxos = 0

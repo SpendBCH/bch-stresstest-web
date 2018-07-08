@@ -1,5 +1,12 @@
 let BITBOXCli = require('bitbox-cli/lib/bitbox-cli').default;
-let BITBOX = new BITBOXCli();
+let BITBOX
+if (window.scaleCashSettings.isTestnet) {
+  BITBOX = new BITBOXCli({
+    restURL: 'https://trest.bitbox.earth/v1/'
+  })
+} else {
+  BITBOX = new BITBOXCli();
+}
 
 const opReturnTagText = "stresstestbitcoin.cash";
 const opReturnTagBuffer = BITBOX.Script.nullData.output.encode(Buffer.from(opReturnTagText, 'ascii'));
@@ -30,7 +37,7 @@ class Utils {
   }
 	
 	static splitAddress(wallet, numAddresses, satsPerAddress, hdNode, node0, changeAddress, satsChange, maxTxChain) {
-    let transactionBuilder = new BITBOX.TransactionBuilder('bitcoincash');
+    let transactionBuilder = new BITBOX.TransactionBuilder(window.scaleCashSettings.networkString);
     transactionBuilder.addInput(wallet.txid, wallet.vout);
 
     let walletChains = []
@@ -111,11 +118,15 @@ class Utils {
   }
 
   static createTx(wallet, targetAddress) {
-    let transactionBuilder = new BITBOX.TransactionBuilder('bitcoincash')
+    let transactionBuilder = new BITBOX.TransactionBuilder(window.scaleCashSettings.networkString)
     transactionBuilder.addInput(wallet.txid, wallet.vout)
 
     // Calculate fee @ 1 sat/byte
     let byteCount = BITBOX.BitcoinCash.getByteCount({ P2PKH: 1 }, { P2PKH: 3 })
+
+    // testnet fees
+    if (window.scaleCashSettings.isTestnet) byteCount *= 15
+
     let satoshisAfterFee = wallet.satoshis - byteCount
 
 		transactionBuilder.addOutput(targetAddress, satoshisAfterFee)
@@ -134,7 +145,7 @@ class Utils {
 	}
 	
 	static createFinalMergeTx(walletChains, targetAddress) {
-		let transactionBuilder = new BITBOX.TransactionBuilder('bitcoincash')
+		let transactionBuilder = new BITBOX.TransactionBuilder(window.scaleCashSettings.networkString)
 		
 		let totalInputSatoshis = 0
 		walletChains.forEach((walletChain) => {
