@@ -61,7 +61,7 @@ class StresstestWallet {
 
     appendLog = (logLine) => {
         // Do not write same message to log
-        if (logLine == this.log[this.log.length-1]) return
+        if (logLine === this.log[this.log.length-1]) return
 
         this.log.push(logLine)
         this.publish()
@@ -83,9 +83,9 @@ class StresstestWallet {
                     await network.mergeUtxos(this.wallet)
                     await sleep(3000)
                     this.utxo = await network.getUtxo(this.wallet.address)
-                } else if (utxos.length == 0) {
+                } else if (utxos.length === 0) {
                     this.wallet.balance = 0
-                } else if (utxos.length == 1) {
+                } else if (utxos.length === 1) {
                     this.utxo = utxos[0]
                 }
 
@@ -104,7 +104,7 @@ class StresstestWallet {
           try {
             this.mempoolSize = await network.getMempoolInfo()
             this.publish()
-          } catch (ex) { 
+          } catch (ex) {
             // Backoff a few seconds after failure
             await sleep(3300)
           }
@@ -175,7 +175,7 @@ class StresstestWallet {
             }
         }
 
-        if (numAddresses == 0) return 0
+        if (numAddresses === 0) return 0
 
         let numTxToSend = (numAddresses * maxTxChain) - numAddresses
         return numTxToSend + 1
@@ -274,7 +274,7 @@ class StresstestWallet {
                     break
                 } catch (ex) {
                     let message = "Problem sending tx. Trying again in " + requestDelaySeconds + " seconds"
-                    if (i == allTxToSend.length - 1) {
+                    if (i === allTxToSend.length - 1) {
                         message = "Waiting for next block to merge final dust. Please wait."
                         requestDelaySeconds = 10
                     }

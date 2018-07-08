@@ -5,12 +5,6 @@ import Wallet from './Wallet'
 import Stresstest from './Stresstest'
 import StresstestWallet from './stresstest-lib/wallet'
 
-const styles = {
-  header: {
-    color: "white",
-  }
-}
-
 class App extends Component {
   constructor(props) {
     super(props)
