@@ -270,7 +270,7 @@ class StresstestWallet {
 
           // Calculate number of meals donated, round to first sigfig
           //numMeals = parseFloat(numMeals.toExponential(Math.max(1,2+Math.log10(Math.abs(numMeals)))))
-          this.appendLog(`Your change and final dust will be collected to donate ${totalDonationSats} satoshis to EatBCH via the Bitcoin Cash peer-to-peer electronic cash-to-food system!`)
+          this.appendLog(`Your change and final dust will be collected to donate to EatBCH via the Bitcoin Cash peer-to-peer electronic cash-to-food system!`)
         } else {  
           refundAddress = this.prepData.wallet.address
           this.appendLog("Change will be sent to your address:" + refundAddress)
