@@ -222,9 +222,9 @@ class StresstestWallet {
 
         // calculate num merge txs
         let numMergeTx = 0
-        if (numAddresses > 13) {
+        if (numAddresses > 15) {
             numMergeTx = Math.floor(numAddresses / 10)
-            if (numAddresses % 10 > 3) {
+            if (numAddresses % 10 > 5) {
                 numMergeTx += 1
             }
         }

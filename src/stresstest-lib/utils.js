@@ -134,12 +134,12 @@ class Utils {
     let finalMergeWallets = []
 
     // Too many inputs, divide into multiple merge tx
-    if (walletChains.length > incrementBy + 3) {
+    if (walletChains.length > incrementBy + 5) {
       while (endIdx < walletChains.length) {
         endIdx += incrementBy
 
-        // Pull last few into this tx (must have at least 2 inputs)
-        if (walletChains.length - endIdx >= 0 && walletChains.length - endIdx <= 3) {
+        // Pull last few inputs into this tx (must have at least 5 inputs)
+        if (walletChains.length - endIdx <= 5) {
           endIdx += incrementBy
         }
 
@@ -156,7 +156,7 @@ class Utils {
         mergeHexList.push(preMergeRes.hex)
 
         // step startIdx
-        startIdx += endIdx
+        startIdx += incrementBy
       }
 
       hexByAddress.push(mergeHexList)
