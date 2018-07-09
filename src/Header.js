@@ -29,8 +29,8 @@ class Header extends Component {
           <img className={classes.logo} src='3-bitcoin-cash-logo-ot-small.png' alt='Bitcoin Cash logo' />
           <Toolbar>
             <Typography variant="title">
-              scale.cash
-            </Typography>
+              scale.cash (beta)
+            </Typography> 
           </Toolbar>
         </AppBar>
       </div>

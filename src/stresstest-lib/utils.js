@@ -40,18 +40,30 @@ class Utils {
     let transactionBuilder = new BITBOX.TransactionBuilder(window.scaleCashSettings.networkString);
     transactionBuilder.addInput(wallet.txid, wallet.vout);
 
+    // Check change against dust limit
+    let numChangeOutputs = 0
+    if (satsChange >= 546) {
+      transactionBuilder.addOutput(changeAddress, satsChange)
+      numChangeOutputs = 1
+    }
+
+    let firstNode = BITBOX.HDNode.derivePath(hdNode, `1/1`)
+    let firstNodeLegacyAddress = BITBOX.HDNode.toLegacyAddress(firstNode)
+    let firstNodeKeyPair = BITBOX.HDNode.toKeyPair(firstNode)
+
     let walletChains = []
     for (let i = 0; i < numAddresses; i++) {
 
-      let firstNode = BITBOX.HDNode.derivePath(hdNode, `1/${i + 1}`)
-      let firstNodeLegacyAddress = BITBOX.HDNode.toLegacyAddress(firstNode)
+      // let firstNode = BITBOX.HDNode.derivePath(hdNode, `1/${i + 1}`)
+      // let firstNodeLegacyAddress = BITBOX.HDNode.toLegacyAddress(firstNode)
+      // let firstNodeKeyPair = BITBOX.HDNode.toKeyPair(firstNode)
 
       let walletChain = {
 				wallet: {
-					vout: i,
+					vout: i + numChangeOutputs,
 					address: firstNodeLegacyAddress,
 					satoshis: satsPerAddress,
-					keyPair: BITBOX.HDNode.toKeyPair(firstNode)
+					keyPair: firstNodeKeyPair,
 				},
 				chainLength: maxTxChain-1,
       }
@@ -63,11 +75,6 @@ class Utils {
 
     // write stresstestbitcoin.cash to the chain w/ OP_RETURN
     transactionBuilder.addOutput(opReturnTagBuffer, 0);
-
-    // Check change against dust limit
-    if (satsChange >= 546) {
-      transactionBuilder.addOutput(changeAddress, satsChange)
-    }
 
     let keyPair = BITBOX.HDNode.toKeyPair(node0);
 
@@ -84,9 +91,16 @@ class Utils {
       return wc
     })
 
+    let changeWallet = {
+      txid: splitTxid,
+      satoshis: satsChange,
+      vout: 0,
+    }
+
     return {
       hex: hex,
       wallets: walletsWithTxid,
+      changeWallet: changeWallet,
     }
   }
 
@@ -109,10 +123,52 @@ class Utils {
         hexList.push(txResult.hex)
       }
       hexByAddress.push(hexList.slice())
-		}
+    }
+    
+    // Phase 1 create 1 pre-merge tx per 10 inputs
+    let mergeAddress = walletChains[0].wallet.address
+    let startIdx = 0
+    let incrementBy = 10 // max inputs per tx
+    let endIdx = 0
+    let mergeHexList = []
+    let finalMergeWallets = []
 
-    let finalMergeTx = this.createFinalMergeTx(walletChains, refundAddress)
-    hexByAddress.push([finalMergeTx])
+    // Too many inputs, divide into multiple merge tx
+    if (walletChains.length > incrementBy + 3) {
+      while (endIdx < walletChains.length) {
+        endIdx += incrementBy
+
+        // Pull last few into this tx (must have at least 2 inputs)
+        if (walletChains.length - endIdx >= 0 && walletChains.length - endIdx <= 3) {
+          endIdx += incrementBy
+        }
+
+        let mergeWallets = walletChains.slice(startIdx, endIdx)
+        let preMergeRes = this.createFinalMergeTx(mergeWallets, mergeAddress)
+        finalMergeWallets.push({ 
+          wallet: {
+            txid: preMergeRes.txid,
+            satoshis: preMergeRes.satoshis,
+            vout: preMergeRes.vout,
+            keyPair: walletChains[0].wallet.keyPair,
+          }
+        })
+        mergeHexList.push(preMergeRes.hex)
+
+        // step startIdx
+        startIdx += endIdx
+      }
+
+      hexByAddress.push(mergeHexList)
+    }
+    // Otherwise only one merge tx
+    else {
+      finalMergeWallets = walletChains
+    }
+
+    // Phase 2 merge the merge txs
+    let finalMergeTx = this.createFinalMergeTx(finalMergeWallets, refundAddress)
+    hexByAddress.push([finalMergeTx.hex])
 
     return hexByAddress
   }
@@ -156,6 +212,10 @@ class Utils {
 
     // Calculate fee @ 1 sat/byte
     let byteCount = BITBOX.BitcoinCash.getByteCount({ P2PKH: walletChains.length }, { P2PKH: 3 })
+
+    // testnet fees
+    if (window.scaleCashSettings.isTestnet) byteCount *= 15
+    
     let satoshisAfterFee = totalInputSatoshis - byteCount
 
 		transactionBuilder.addOutput(targetAddress, satoshisAfterFee)
@@ -169,7 +229,16 @@ class Utils {
 			transactionBuilder.sign(index, wallet.keyPair, redeemScript, transactionBuilder.hashTypes.SIGHASH_ALL, wallet.satoshis)
 		})
 
-    return transactionBuilder.build().toHex()
+    let hex = transactionBuilder.build().toHex()
+
+    let txid = this.txidFromHex(hex)
+
+    return {
+      hex: hex,
+      txid: txid,
+      satoshis: satoshisAfterFee,
+      vout: 0,
+    }
   }
 
 }

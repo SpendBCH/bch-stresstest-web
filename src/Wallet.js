@@ -66,7 +66,6 @@ class Wallet extends Component {
     this.state = {
       mnemonic: "",
       isImportingMnemonic: false,
-      isDepositing: false,
       isWalletExpanded: true,
       canRecoverFunds: false,
     }
@@ -120,7 +119,7 @@ class Wallet extends Component {
                 { this.props.wallet.canRecoverFunds ? "Lost funds found. Please attempt to recover before starting a stresstest" : "" }
               </Typography>
               <CardActions className={classes.cardActions}>
-              <Button
+              {/* <Button
                 variant="contained"
                 color="primary"
                 className={classes.button}
@@ -128,6 +127,15 @@ class Wallet extends Component {
                 disabled={ !this.props.wallet.canRecoverFunds }
               >
                 Recover Lost Funds
+              </Button> */}
+              <Button
+                variant="contained"
+                color="primary"
+                className={classes.button}
+                onClick={this.props.refreshBalance}
+                disabled={ this.props.wallet.isPollingForDeposit || this.props.wallet.isStresstesting ? true : false }
+              >
+                Refresh Balance
               </Button>
               <IconButton
                 className={this.state.isWalletExpanded ? `${classes.expand} ${classes.expandOpen}` : classes.expand }

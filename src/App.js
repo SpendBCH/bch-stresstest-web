@@ -27,8 +27,12 @@ class App extends Component {
     }
   }
 
-  startStresstest = () => {
-    this.state.wallet.startStresstest()
+  refreshBalance = () => {
+    this.state.wallet.pollForDeposit()
+  }
+
+  startStresstest = (isDonating) => {
+    this.state.wallet.startStresstest(isDonating)
   }
 
   recoverOrphanUtxos = () => {
@@ -59,7 +63,7 @@ class App extends Component {
         <Header /> <br/>
         <hr/>
         <div>
-          <Wallet wallet={this.state.wallet} createWallet={this.createWallet} recoverOrphanUtxos={this.recoverOrphanUtxos} />
+          <Wallet wallet={this.state.wallet} createWallet={this.createWallet} refreshBalance={this.refreshBalance} recoverOrphanUtxos={this.recoverOrphanUtxos} />
           <hr/>
           <Stresstest wallet={this.state.wallet} startStresstest={this.startStresstest} />
         </div>

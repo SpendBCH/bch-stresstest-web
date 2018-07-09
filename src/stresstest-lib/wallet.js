@@ -12,17 +12,16 @@ if (window.scaleCashSettings.isTestnet) {
 }
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
-const maxAddresses = 200
 
 class StresstestWallet {
     constructor(mnemonic) {
         // If WIF does not exist, create new node and address
         if (mnemonic === undefined) {
-            mnemonic = BITBOX.Mnemonic.generate(256)
+            this.mnemonic = BITBOX.Mnemonic.generate(256)
         }
-        this.mnemonic = mnemonic
+        this.mnemonic = mnemonic.trim()
 
-        let rootSeed = BITBOX.Mnemonic.toSeed(mnemonic)
+        let rootSeed = BITBOX.Mnemonic.toSeed(this.mnemonic)
         let masterHDNode = BITBOX.HDNode.fromSeed(rootSeed, window.scaleCashSettings.networkString)
         this.hdNode = BITBOX.HDNode.derivePath(masterHDNode, "m/44'/145'/0'")
         this.node0 = BITBOX.HDNode.derivePath(this.hdNode, "0/0")
@@ -51,9 +50,19 @@ class StresstestWallet {
         this.mempoolSize = 0
         this.txSentThisRun = 0
 
+        // Stresstest preparation data
+        this.prepData = {
+          numTxToSend: 0,
+          numAddresses: 0,
+          wallet: null,
+          satsPerAddress: 0,
+          satsChange: 0,
+          maxTxChain: 0,
+        }
+
         // Look for funds to recover
         this.canRecoverFunds = false
-        this.searchForOrphanUtxos(this.hdNode)
+        // this.searchForOrphanUtxos(this.hdNode)
         this.pollForDeposit()
         this.pollForMempoolinfo()
     }
@@ -81,31 +90,41 @@ class StresstestWallet {
             return
 
         this.isPollingForDeposit = true
-        this.utxo = undefined
-        while (true) {
+        this.prepData.numTxToSend = 0
+        this.publish()
+        //this.utxo = undefined
+        //while (true) {
             if (!this.isPollingForDeposit) return
 
             try {
                 let utxos = await network.getAllUtxo(this.wallet.address)
-                this.utxo = undefined
+                //this.utxo = undefined
+                let utxo
                 if (utxos.length > 1) {
                     await network.mergeUtxos(this.wallet)
                     await sleep(3000)
-                    this.utxo = await network.getUtxo(this.wallet.address)
+                    utxo = await network.getUtxo(this.wallet.address)
                 } else if (utxos.length === 0) {
                     this.wallet.balance = 0
                 } else if (utxos.length === 1) {
-                    this.utxo = utxos[0]
+                    utxo = utxos[0]
                 }
 
-                if (this.utxo !== undefined) {
+                if (utxo !== undefined) {
+                    this.utxo = utxo
                     this.wallet.balance = this.utxo.satoshis
-                    this.publish()
                 }
-            } catch (ex) {}
 
-            await sleep(10 * 1000)
-        }
+                // Calculate num tx to send and stresstest data
+                this.prepareStresstest()
+            } catch (ex) {
+              console.log("Problem refreshing balance: " + ex)
+            }
+
+        //     await sleep(10 * 1000)
+        // }
+        this.isPollingForDeposit = false
+        this.publish()
     }
 
     pollForMempoolinfo = async () => {
@@ -150,20 +169,34 @@ class StresstestWallet {
         } catch (ex) {}
     }
 
-    getNumTxToSend = () => {
-        if (this.utxo === undefined) return 0
+    prepareStresstest = () => {
+        // must have utxo
+        if (this.utxo === undefined) { 
+          this.prepData.numTxToSend = 0
+          return
+        }
 
         let wallet = {
             satoshis: this.utxo.satoshis,
             txid: this.utxo.txid,
-            vout: this.utxo.vout
+            vout: this.utxo.vout,
+            address: this.utxo.legacyAddress,
         }
 
+        let maxAddresses = window.scaleCashSettings.maxAddressesTotal
         let dustLimitSats = 546
         let maxTxChain = 24
         let feePerTx = BITBOX.BitcoinCash.getByteCount({ P2PKH: 1 }, { P2PKH: 3 })
+
+        // testnet fee
+        if (window.scaleCashSettings.isTestnet) feePerTx *= 15
+
         let satsPerAddress = feePerTx * maxTxChain + dustLimitSats
         let splitFeePerAddress = BITBOX.BitcoinCash.getByteCount({ P2PKH: 0 }, { P2PKH: 1 })
+
+        // testnet fee
+        if (window.scaleCashSettings.isTestnet) splitFeePerAddress *= 15
+
         let numAddresses = Math.floor((wallet.satoshis) / (satsPerAddress + splitFeePerAddress))
 
         // Check for max tx size limit
@@ -176,6 +209,10 @@ class StresstestWallet {
         while (satsChange < dustLimitSats) {
             // Calculate splitTx fee and change to return to refundAddress
             byteCount = BITBOX.BitcoinCash.getByteCount({ P2PKH: 1 }, { P2PKH: numAddresses + 3 })
+
+            // testnet fee
+            if (window.scaleCashSettings.isTestnet) byteCount *= 15
+
             satsChange = wallet.satoshis - byteCount - (numAddresses * satsPerAddress)
 
             if (satsChange < dustLimitSats) {
@@ -183,90 +220,101 @@ class StresstestWallet {
             }
         }
 
-        if (numAddresses === 0) return 0
-
-        let numTxToSend = (numAddresses * maxTxChain) - numAddresses
-        return numTxToSend + 1
-    }
-
-    startStresstest = async () => {
-        // Wait for utxo to arrive to build starting wallet
-        this.isPollingForDeposit = false
-        let utxo
-        while (true) {
-            if (this.utxo === undefined) sleep(500)
-            else {
-                utxo = this.utxo
-                break
+        // calculate num merge txs
+        let numMergeTx = 0
+        if (numAddresses > 13) {
+            numMergeTx = Math.floor(numAddresses / 10)
+            if (numAddresses % 10 > 3) {
+                numMergeTx += 1
             }
         }
+
+        // always include last merge tx (either independent or including pre-merge txs)
+        numMergeTx += 1
+
+        // Calculate num transactions that will be sent
+        let numTxToSend = 1 + (numAddresses * maxTxChain) - numAddresses + numMergeTx
+
+        // Must send at least 2 
+        if (numAddresses <= 1) numTxToSend = 0
+
+        // Update prep settings for upcoming run
+        this.prepData = {
+          numTxToSend: numTxToSend,
+          numAddresses: numAddresses,
+          dustLimitSats: dustLimitSats,
+          wallet: wallet,
+          satsPerAddress: satsPerAddress,
+          satsChange: satsChange,
+          maxTxChain: maxTxChain,
+          numMergeTx: numMergeTx
+        }
+        this.publish()
+
+        return
+    }
+
+    startStresstest = async (isDonating) => {
+        // Wait for utxo to arrive to build starting wallet
+        this.isPollingForDeposit = false
+        this.isStresstesting = true
 
         // reset log
         this.log = []
         this.txSentThisRun = 0
 
-        // TODO: Get refund address from tx details
-        let refundAddress = utxo.legacyAddress
+        let refundAddress
+        if (isDonating) {
+          refundAddress = "bitcoincash:pp8skudq3x5hzw8ew7vzsw8tn4k8wxsqsv0lt0mf3g"
+          let totalDonationSats = (this.prepData.numAddresses * this.prepData.dustLimitSats)
 
-        this.appendLog("Change will be sent to your address:" + refundAddress)
-
-        let wallet = {
-            satoshis: utxo.satoshis,
-            txid: utxo.txid,
-            vout: utxo.vout
+          // Calculate number of meals donated, round to first sigfig
+          //numMeals = parseFloat(numMeals.toExponential(Math.max(1,2+Math.log10(Math.abs(numMeals)))))
+          this.appendLog(`Your change and final dust will be collected to donate ${totalDonationSats} satoshis to EatBCH via the Bitcoin Cash peer-to-peer electronic cash-to-food system!`)
+        } else {  
+          refundAddress = this.prepData.wallet.address
+          this.appendLog("Change will be sent to your address:" + refundAddress)
         }
 
-        let dustLimitSats = 546
-        let maxTxChain = 24 // 24 or lower, last is final merge tx
-        let feePerTx = BITBOX.BitcoinCash.getByteCount({ P2PKH: 1 }, { P2PKH: 3 })
-        let satsPerAddress = feePerTx * maxTxChain + dustLimitSats
-        let splitFeePerAddress = BITBOX.BitcoinCash.getByteCount({ P2PKH: 0 }, { P2PKH: 1 })
-        let numAddresses = Math.floor((wallet.satoshis) / (satsPerAddress + splitFeePerAddress))
-
-        // Check for max tx size limit
-        if (numAddresses > maxAddresses)
-        numAddresses = maxAddresses
-
-        // Reduce number of addresses as required for split tx fee
-        let byteCount = 0
-        let satsChange = 0
-        while (satsChange < dustLimitSats) {
-            // Calculate splitTx and final merge tx fees and change to return to refundAddress
-            byteCount = BITBOX.BitcoinCash.getByteCount({ P2PKH: 1 }, { P2PKH: numAddresses + 3 })
-            satsChange = wallet.satoshis - byteCount - (numAddresses * satsPerAddress)
-
-            if (satsChange < dustLimitSats) {
-                numAddresses = numAddresses - 1
-            }
-        }
-
-        this.appendLog(`Creating ${numAddresses} addresses to send ${numAddresses * (maxTxChain-1)+1} transactions with ${satsChange} sats change to be refunded`)
-
-        let splitAddressResult = stUtils.splitAddress(wallet, numAddresses, satsPerAddress, this.hdNode, this.node0, refundAddress, satsChange, maxTxChain)
+        // create fanout tx
+        let splitAddressResult = stUtils.splitAddress(this.prepData.wallet, this.prepData.numAddresses, this.prepData.satsPerAddress, this.hdNode, this.node0, refundAddress, this.prepData.satsChange, this.prepData.maxTxChain)
         let splitTxHex = splitAddressResult.hex
         let walletChains = splitAddressResult.wallets
 
-        // Broadcast split tx
+        // Broadcast split tx, wait for successful broadcast
+        this.appendLog("Creating fanout transaction")
         let splitTxid
         while (true) {
           try {
             splitTxid = await network.sendTxAsync(splitTxHex)
             break
-          } catch (ex) {}
-          await sleep(3300)
+          } catch (ex) {
+            // Special case for tx already in block chain error
+            try {
+                if (ex !== undefined && ex.length) {
+                    if (ex.indexOf("transaction already in block chain") != -1) {
+                        break
+                    }
+                }
+            } catch (ex2) {}
+          }
+          await sleep(10 * 1000)
         }
-        this.appendLog("Split tx completed. Txid: " + splitTxid)
+        this.txSentThisRun += 1
+        this.totalTxSent += 1
+        this.appendLog("Fanout transaction complete. Txid: " + splitTxid)
 
         // Generate transactions for each address
+        this.appendLog(`Creating ${this.prepData.numTxToSend} transactions... Please wait.`)
         let hexListByAddress = stUtils.createChainedTransactions(walletChains, refundAddress)
 
         // Wait for first confirmation before stress testing to avoid mempool chain limit
-        this.appendLog("Waiting for first confirmation of split tx...")
+        this.appendLog("Waiting for first confirmation of fanout tx...")
         await network.pollForConfirmation(splitTxid)
 
-        this.appendLog(`Split tx confirmed. Starting broadcast...`)
+        this.appendLog(`Fanout tx confirmed. Starting broadcast...`)
 
-        // flatten array
+        // flatten 2d array
         let allTxToSend = [].concat(...hexListByAddress)
         this.numTxToSend = allTxToSend.length
 
@@ -280,9 +328,22 @@ class StresstestWallet {
                     this.appendLog("Sent txid: " + txid)
                     break
                 } catch (ex) {
+                    // Special case for tx already in block chain error
+                    try {
+                        if (ex !== undefined && ex.length) {
+                            if (ex.indexOf("transaction already in block chain") != -1) {
+                                break
+                            }
+                        }
+                    } catch (ex2) {}
+
                     let message = "Problem sending tx. Trying again in " + requestDelaySeconds + " seconds"
-                    if (i === allTxToSend.length - 1) {
-                        message = "Waiting for next block to merge final dust. Please wait."
+                    if (i >= allTxToSend.length - this.prepData.numMergeTx) {
+                        if (isDonating) {
+                          message = "Waiting for all sent tx to confirm to donate final dust to eatBCH. Please keep your browser open until sent."
+                        } else {
+                          message = "Waiting for all sent tx to confirm to merge final dust. Please keep your browser open until sent."
+                        }
                         requestDelaySeconds = 10
                     }
 
@@ -300,6 +361,9 @@ class StresstestWallet {
 
             await sleep(1000)
         }
+
+        this.isStresstesting = false
+        this.publish()
     }
 }
 

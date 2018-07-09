@@ -6,6 +6,8 @@ import Button from '@material-ui/core/Button'
 import CardActions from '@material-ui/core/CardActions'
 import Grid from '@material-ui/core/Grid'
 import LinearProgress from '@material-ui/core/LinearProgress'
+import FormControlLabel from '@material-ui/core/FormControlLabel'
+import Checkbox from '@material-ui/core/Checkbox'
 import Credits from './Credits'
 
 const classStyles = theme => ({
@@ -60,7 +62,14 @@ const classStyles = theme => ({
       color: '#4D4D4D',
       transition: '0.4s'
     }
-  }
+  },
+  checkbox: {
+    color: '#F59332',
+    '&$checked': {
+      color: '#F59332'
+    },
+  },
+  checked: {},
 })
 
 class Stresstest extends Component {
@@ -69,7 +78,8 @@ class Stresstest extends Component {
 
     this.state = {
       isStresstesting: false,
-      stresstestExpanded: false,
+      isStresstestExpanded: false,
+      isDonating: true,
     }
   }
 
@@ -81,10 +91,15 @@ class Stresstest extends Component {
     })
   }
 
+  handleCheckboxChange = name => event => {
+    this.setState({ [name]: event.target.checked });
+  }
+
   startStresstest = () => {
+    let isDonating = this.state.isDonating
     this.setState({
       isStresstesting: true,
-    }, this.props.startStresstest)
+    }, () => this.props.startStresstest(isDonating))
   }
 
   startNewStresstest = () => {
@@ -94,15 +109,22 @@ class Stresstest extends Component {
   }
 
   handleExpandStresstestClick = () => {
-    this.setState(state => ({ stresstestExpanded: !state.stresstestExpanded }));
+    this.setState(state => ({ isStresstestExpanded: !state.isStresstestExpanded }));
   }
 
   getStresstestCompletePercent = () => {
     let numSent = this.props.wallet.txSentThisRun
-    let numToSend = this.props.wallet.getNumTxToSend()
+    let numTxToSend = this.props.wallet.prepData.numTxToSend
 
-    if (numToSend < 1) return 0
-    else return (numSent / numToSend) * 100
+    if (numTxToSend < 1) return 0
+    else return (numSent / numTxToSend) * 100
+  }
+
+  renderFooterStats = () => {
+    return (<div>
+      <b>Mempool Size: </b> { this.props.wallet.mempoolSize } transactions <br/>
+      <b>Your Total TX Sent: </b> { this.props.wallet.totalTxSent } transactions
+    </div>);
   }
 
   renderStresstest = () => {
@@ -112,20 +134,23 @@ class Stresstest extends Component {
       return <div key={index}>{l}</div>
     })
 
+    let runningMessage = `Sending ${ this.props.wallet.prepData.numTxToSend } transactions. Keep your browser open.`
+    let finishedMessage = `Finished sending ${ this.props.wallet.txSentThisRun } transactions`
+
     return (<div>
       <Paper className={classes.root} elevation={3}>
         <Typography variant="headline" component="h3">
-          Sending { this.props.wallet.getNumTxToSend() } transactions
+          { this.props.wallet.isStresstesting ? runningMessage : finishedMessage }
         </Typography>
         <div className={classes.log}>
           {log}
         </div>
         <div>
-          <b>Total Sent: </b> { this.props.wallet.totalTxSent }
+          <b>Sent: </b> { this.props.wallet.txSentThisRun }
         </div>
         <div className={classes.progress}>
           <LinearProgress classes={{
-              colorPrimary: '#f5933269',
+              colorPrimary: '#F59332',
               barColorPrimary: '#4D4D4D', 
             }}
             variant="determinate"
@@ -143,9 +168,7 @@ class Stresstest extends Component {
             Start New Stresstest
           </Button>
         </CardActions>
-        <div>
-          <b>Mempool Size: </b> { this.props.wallet.mempoolSize } transactions
-        </div>
+        { this.renderFooterStats() }
       </Paper>
       <Credits classes={classes}></Credits>
     </div>);
@@ -154,8 +177,9 @@ class Stresstest extends Component {
   renderReady = () => {
       const { classes } = this.props
 
-    let numTxToSend = this.props.wallet ? this.props.wallet.getNumTxToSend() : 0
-    let headerMessage = numTxToSend > 0 ? "Ready to send " + numTxToSend + " transactions" : "Deposit at least 15k sats to start"
+    let numTxToSend = this.props.wallet ? this.props.wallet.prepData.numTxToSend : 0
+    let headerMessage = numTxToSend > 0 ? "Ready to send " + numTxToSend + " transactions" : "Deposit between 15k to 650k satoshis (~$0.15 to $5) to start"
+
     return (<div>
       <Paper className={classes.root} elevation={3}>
         <Typography variant="headline" component="h3">
@@ -167,7 +191,7 @@ class Stresstest extends Component {
             <Grid item xs={9}>
               <Typography component="p">
                 Deposit funds then press start to begin stresstesting. <br/>
-                Remember to first <b>save</b> your <b>WIF, mnemonic, and proof of tx signature</b> from your wallet above
+                Remember to first <b>save</b> your <b>WIF, mnemonic, and proof of tx signature</b> from your wallet above in case you need to recover funds
               </Typography>
             </Grid>
           </Grid>
@@ -178,11 +202,22 @@ class Stresstest extends Component {
             color="primary"
             className={classes.button}
             onClick={this.startStresstest}
-            disabled={ numTxToSend === 0 ? true : false }
+            disabled={ numTxToSend == 0 || (this.props.wallet && this.props.wallet.isPollingForDeposit) ? true : false }
           >
             Start Stresstest
           </Button>
+          <FormControlLabel
+            control={
+              <Checkbox
+              checked={this.state.isDonating}
+              onChange={this.handleCheckboxChange('isDonating')}
+              value="isDonating"
+              classes={{ root: classes.checkbox, checked: classes.checked  }}
+              /> 
+            } label="Donate change and collected dust to eatBCH?"
+          />
         </CardActions>
+        { this.props.wallet ? this.renderFooterStats() : "" }
       </Paper>
       <Credits classes={classes}></Credits>
     </div>);
