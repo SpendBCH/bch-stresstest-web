@@ -103,6 +103,8 @@ class Stresstest extends Component {
   }
 
   startNewStresstest = () => {
+    this.props.wallet.prepData.numTxToSend = 0
+
     this.setState({
       isStresstesting: false,
     }, this.props.wallet.pollForDeposit)

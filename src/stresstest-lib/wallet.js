@@ -18,8 +18,9 @@ class StresstestWallet {
         // If WIF does not exist, create new node and address
         if (mnemonic === undefined) {
             this.mnemonic = BITBOX.Mnemonic.generate(256)
+        } else {
+            this.mnemonic = mnemonic.trim()
         }
-        this.mnemonic = mnemonic.trim()
 
         let rootSeed = BITBOX.Mnemonic.toSeed(this.mnemonic)
         let masterHDNode = BITBOX.HDNode.fromSeed(rootSeed, window.scaleCashSettings.networkString)
