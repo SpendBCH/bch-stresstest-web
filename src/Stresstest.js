@@ -219,6 +219,11 @@ class Stresstest extends Component {
             } label="Donate change and collected dust to eatBCH?"
           />
         </CardActions>
+        <div>
+          <b>
+            All transactions are signed and sent by your browser. Import your mnemonic into a wallet to recover if you refresh during testing.
+          </b>
+        </div> <br/>
         { this.props.wallet ? this.renderFooterStats() : "" }
       </Paper>
       <Credits classes={classes}></Credits>

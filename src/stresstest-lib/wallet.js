@@ -305,27 +305,26 @@ class StresstestWallet {
         this.totalTxSent += 1
         this.appendLog("Fanout transaction complete. Txid: " + splitTxid)
 
-        // Generate transactions for each address
-        this.appendLog(`Creating ${this.prepData.numTxToSend} transactions... Please wait.`)
-        let hexListByAddress = stUtils.createChainedTransactions(walletChains, refundAddress)
-
         // Wait for first confirmation before stress testing to avoid mempool chain limit
         this.appendLog("Waiting for first confirmation of fanout tx...")
         await network.pollForConfirmation(splitTxid)
 
         this.appendLog(`Fanout tx confirmed. Starting broadcast...`)
 
-        // flatten 2d array
-        let allTxToSend = [].concat(...hexListByAddress)
-        this.numTxToSend = allTxToSend.length
+        // Tx to send generator
+        let allTxToSend = stUtils.createChainedTransactions(walletChains, refundAddress)
 
         // send each tx
-        for (let i=0; i< allTxToSend.length; i++) {
+        let i = 0
+        let nextTx = allTxToSend.next()
+        while (!nextTx.done) {
+            let nextTxHex = nextTx.value
+
             // Must send all tx in order, backoff request rate until sent
             let requestDelaySeconds = 2
             while (true) {
                 try {
-                    let txid = await network.sendTxAsync(allTxToSend[i])
+                    let txid = await network.sendTxAsync(nextTxHex)
                     this.appendLog("Sent txid: " + txid)
                     break
                 } catch (ex) {
@@ -338,8 +337,8 @@ class StresstestWallet {
                         }
                     } catch (ex2) {}
 
-                    let message = "Problem sending tx. Trying again in " + requestDelaySeconds + " seconds"
-                    if (i >= allTxToSend.length - this.prepData.numMergeTx) {
+                    let message = "Problem sending tx. Trying again..."
+                    if (i >= this.prepData.numTxToSend - this.prepData.numMergeTx - 1) {
                         if (isDonating) {
                           message = "Waiting for all sent tx to confirm to donate final dust to eatBCH. Please keep your browser open until sent."
                         } else {
@@ -356,6 +355,8 @@ class StresstestWallet {
                 requestDelaySeconds += 1
             }
 
+            i += 1
+            nextTx = allTxToSend.next()
             this.totalTxSent += 1
             this.txSentThisRun += 1
             this.publish()

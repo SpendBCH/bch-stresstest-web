@@ -104,7 +104,7 @@ class Utils {
     }
   }
 
-  static createChainedTransactions(walletChains, refundAddress) {
+  static *createChainedTransactions(walletChains, refundAddress) {
     let hexByAddress = []
 
     for (let i = 0; i < walletChains.length; i++) {
@@ -120,6 +120,7 @@ class Utils {
         wallet.satoshis = txResult.satoshis
         wallet.vout = txResult.vout
 
+        yield txResult.hex
         hexList.push(txResult.hex)
       }
       hexByAddress.push(hexList.slice())
@@ -153,6 +154,8 @@ class Utils {
             keyPair: walletChains[0].wallet.keyPair,
           }
         })
+
+        yield preMergeRes.hex
         mergeHexList.push(preMergeRes.hex)
 
         // step startIdx
@@ -168,6 +171,8 @@ class Utils {
 
     // Phase 2 merge the merge txs
     let finalMergeTx = this.createFinalMergeTx(finalMergeWallets, refundAddress)
+
+    yield finalMergeTx.hex
     hexByAddress.push([finalMergeTx.hex])
 
     return hexByAddress
