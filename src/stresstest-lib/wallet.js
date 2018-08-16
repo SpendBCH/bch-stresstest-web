@@ -334,7 +334,7 @@ class StresstestWallet {
                             if (sendResult.length == 64) {
                                 this.appendLog("Sent txid: " + sendResult)
                             }
-                            return (sendResult.length !== 64)
+                            return (sendResult.length != 64 && sendResult.indexOf("transaction already in block chain") == -1)
                         })
 
                         if (nextTxHex.length > 0) {
