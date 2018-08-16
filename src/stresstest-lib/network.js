@@ -2,10 +2,10 @@ let BITBOXCli = require('bitbox-cli/lib/bitbox-cli').default;
 let BITBOX
 if (window.scaleCashSettings.isTestnet) {
   BITBOX = new BITBOXCli({
-    restURL: 'https://trest.bitbox.earth/v1/'
+    restURL: 'https://trest.bitcoin.com/v1/'
   })
 } else {
-  BITBOX = new BITBOXCli();
+    BITBOX = new BITBOXCli()
 }
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
@@ -281,9 +281,6 @@ class Network {
       }
 
     static async sendTxAsync(hex) {
-        // throttle calls to api
-        await sleep(1000)
-
         return new Promise((resolve, reject) => {
             BITBOX.RawTransactions.sendRawTransaction(hex).then((result) => {
                 try {
@@ -294,6 +291,19 @@ class Network {
                     else {
                         resolve(result)
                     }
+                } catch (ex) { reject(ex) }
+            }, (err) => {
+                console.log(err)
+                reject(err)
+            })
+        })
+    }
+
+    static async sendTxArrayAsync(hexArray) {
+        return new Promise((resolve, reject) => {
+            BITBOX.RawTransactions.sendRawTransaction(hexArray).then((result) => {
+                try {
+                    resolve(result)
                 } catch (ex) { reject(ex) }
             }, (err) => {
                 console.log(err)
@@ -336,7 +346,7 @@ class Network {
 
     static async getMempoolInfo() {
         // throttle calls to api
-        await sleep(3000)
+        await sleep(10 * 1000)
 
         return new Promise((resolve, reject) => {
             BITBOX.Blockchain.getMempoolInfo().then((result) => {

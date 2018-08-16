@@ -5,7 +5,7 @@ let BITBOXCli = require('bitbox-cli/lib/bitbox-cli').default;
 let BITBOX
 if (window.scaleCashSettings.isTestnet) {
   BITBOX = new BITBOXCli({
-    restURL: 'https://trest.bitbox.earth/v1/'
+    restURL: 'https://trest.bitcoin.com/v1/'
   })
 } else {
   BITBOX = new BITBOXCli();
@@ -93,37 +93,34 @@ class StresstestWallet {
         this.isPollingForDeposit = true
         this.prepData.numTxToSend = 0
         this.publish()
-        //this.utxo = undefined
-        //while (true) {
-            if (!this.isPollingForDeposit) return
 
-            try {
-                let utxos = await network.getAllUtxo(this.wallet.address)
-                //this.utxo = undefined
-                let utxo
-                if (utxos.length > 1) {
-                    await network.mergeUtxos(this.wallet)
-                    await sleep(3000)
-                    utxo = await network.getUtxo(this.wallet.address)
-                } else if (utxos.length === 0) {
-                    this.wallet.balance = 0
-                } else if (utxos.length === 1) {
-                    utxo = utxos[0]
-                }
+        if (!this.isPollingForDeposit) return
 
-                if (utxo !== undefined) {
-                    this.utxo = utxo
-                    this.wallet.balance = this.utxo.satoshis
-                }
-
-                // Calculate num tx to send and stresstest data
-                this.prepareStresstest()
-            } catch (ex) {
-              console.log("Problem refreshing balance: " + ex)
+        try {
+            let utxos = await network.getAllUtxo(this.wallet.address)
+            //this.utxo = undefined
+            let utxo
+            if (utxos.length > 1) {
+                await network.mergeUtxos(this.wallet)
+                await sleep(3000)
+                utxo = await network.getUtxo(this.wallet.address)
+            } else if (utxos.length === 0) {
+                this.wallet.balance = 0
+            } else if (utxos.length === 1) {
+                utxo = utxos[0]
             }
 
-        //     await sleep(10 * 1000)
-        // }
+            if (utxo !== undefined) {
+                this.utxo = utxo
+                this.wallet.balance = this.utxo.satoshis
+            }
+
+            // Calculate num tx to send and stresstest data
+            this.prepareStresstest()
+        } catch (ex) {
+            console.log("Problem refreshing balance: " + ex)
+        }
+
         this.isPollingForDeposit = false
         this.publish()
     }
@@ -134,8 +131,8 @@ class StresstestWallet {
             this.mempoolSize = await network.getMempoolInfo()
             this.publish()
           } catch (ex) {
-            // Backoff a few seconds after failure
-            await sleep(3300)
+            // Backoff a few additional seconds after failure
+            await sleep(30 * 1000)
           }
         }
     }
@@ -223,9 +220,9 @@ class StresstestWallet {
 
         // calculate num merge txs
         let numMergeTx = 0
-        if (numAddresses > 15) {
-            numMergeTx = Math.floor(numAddresses / 10)
-            if (numAddresses % 10 > 5) {
+        if (numAddresses > 25) {
+            numMergeTx = Math.floor(numAddresses / 20)
+            if (numAddresses % 20 > 5) {
                 numMergeTx += 1
             }
         }
@@ -269,8 +266,6 @@ class StresstestWallet {
           refundAddress = "bitcoincash:pp8skudq3x5hzw8ew7vzsw8tn4k8wxsqsv0lt0mf3g"
           let totalDonationSats = (this.prepData.numAddresses * this.prepData.dustLimitSats)
 
-          // Calculate number of meals donated, round to first sigfig
-          //numMeals = parseFloat(numMeals.toExponential(Math.max(1,2+Math.log10(Math.abs(numMeals)))))
           this.appendLog(`Your change and final dust will be collected to donate to EatBCH via the Bitcoin Cash peer-to-peer electronic cash-to-food system!`)
         } else {  
           refundAddress = this.prepData.wallet.address
@@ -311,22 +306,43 @@ class StresstestWallet {
 
         this.appendLog(`Fanout tx confirmed. Starting broadcast...`)
 
+        // Set max tx to send in parallel
+        let maxParallelTx = walletChains.length < 30 ? walletChains.length : 30;
+
         // Tx to send generator
-        let allTxToSend = stUtils.createChainedTransactions(walletChains, refundAddress)
+        let allTxToSend = stUtils.createChainedTransactions(walletChains, refundAddress, maxParallelTx)
 
         // send each tx
         let i = 0
         let nextTx = allTxToSend.next()
         while (!nextTx.done) {
-            let nextTxHex = nextTx.value
+            let nextTxHex = Array.isArray(nextTx.value) ? nextTx.value.slice() : nextTx.value
 
             // Must send all tx in order, backoff request rate until sent
             let requestDelaySeconds = 2
             while (true) {
                 try {
-                    let txid = await network.sendTxAsync(nextTxHex)
-                    this.appendLog("Sent txid: " + txid)
-                    break
+                    // Merge transactions will not be an array
+                    if (!Array.isArray(nextTxHex)) {
+                        let txid = await network.sendTxAsync(nextTxHex)
+                        this.appendLog("Sent txid: " + txid)
+                        break
+                    } else {
+                        let parallelResult = await network.sendTxArrayAsync(nextTxHex)
+                        nextTxHex = nextTxHex.filter((txItem, txIdx) => {
+                            let sendResult = parallelResult[txIdx]
+                            if (sendResult.length == 64) {
+                                this.appendLog("Sent txid: " + sendResult)
+                            }
+                            return (sendResult.length !== 64)
+                        })
+
+                        if (nextTxHex.length > 0) {
+                            throw "One or more tx failed. Trying failed txs again."
+                        } else {
+                            break
+                        }
+                    }
                 } catch (ex) {
                     // Special case for tx already in block chain error
                     try {
@@ -355,13 +371,22 @@ class StresstestWallet {
                 requestDelaySeconds += 1
             }
 
-            i += 1
+            if (!Array.isArray(nextTx.value)) {
+                i += 1
+                this.totalTxSent += 1
+                this.txSentThisRun += 1
+            } else {
+                i += nextTx.value.length
+                this.totalTxSent += nextTx.value.length
+                this.txSentThisRun += nextTx.value.length
+            }
+
             nextTx = allTxToSend.next()
-            this.totalTxSent += 1
-            this.txSentThisRun += 1
+            
             this.publish()
 
-            await sleep(1000)
+            // process at 50 tx/s
+            await sleep(1200)
         }
 
         this.isStresstesting = false

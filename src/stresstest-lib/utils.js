@@ -2,7 +2,7 @@ let BITBOXCli = require('bitbox-cli/lib/bitbox-cli').default;
 let BITBOX
 if (window.scaleCashSettings.isTestnet) {
   BITBOX = new BITBOXCli({
-    restURL: 'https://trest.bitbox.earth/v1/'
+    restURL: 'https://trest.bitcoin.com/v1/'
   })
 } else {
   BITBOX = new BITBOXCli();
@@ -104,15 +104,12 @@ class Utils {
     }
   }
 
-  static *createChainedTransactions(walletChains, refundAddress) {
-    let hexByAddress = []
+  static *createChainedTransactions(walletChains, refundAddress, maxParallelTx) {
+    let parallelTx = []
+    for (let txIdx = 0; txIdx < walletChains[0].chainLength; txIdx++) {
+      for (let wcIdx = 0; wcIdx < walletChains.length; wcIdx++) {
+        let wallet = walletChains[wcIdx].wallet
 
-    for (let i = 0; i < walletChains.length; i++) {
-      let walletChain = walletChains[i]
-
-      let hexList = []
-      let wallet = walletChain.wallet
-      for (let j = 0; j < walletChain.chainLength; j++) {
         let txResult = this.createTx(wallet, wallet.address)
 
         // Update wallet for next send
@@ -120,16 +117,23 @@ class Utils {
         wallet.satoshis = txResult.satoshis
         wallet.vout = txResult.vout
 
-        yield txResult.hex
-        hexList.push(txResult.hex)
+        parallelTx.push(txResult.hex)
+
+        if (parallelTx.length >= maxParallelTx) {
+          yield parallelTx
+          parallelTx = []
+        }
       }
-      hexByAddress.push(hexList.slice())
+    }
+
+    if (parallelTx.length > 0) {
+      yield parallelTx
     }
     
     // Phase 1 create 1 pre-merge tx per 10 inputs
     let mergeAddress = walletChains[0].wallet.address
     let startIdx = 0
-    let incrementBy = 10 // max inputs per tx
+    let incrementBy = 20 // max inputs per tx
     let endIdx = 0
     let mergeHexList = []
     let finalMergeWallets = []
@@ -161,8 +165,6 @@ class Utils {
         // step startIdx
         startIdx += incrementBy
       }
-
-      hexByAddress.push(mergeHexList)
     }
     // Otherwise only one merge tx
     else {
@@ -173,9 +175,8 @@ class Utils {
     let finalMergeTx = this.createFinalMergeTx(finalMergeWallets, refundAddress)
 
     yield finalMergeTx.hex
-    hexByAddress.push([finalMergeTx.hex])
 
-    return hexByAddress
+    return
   }
 
   static createTx(wallet, targetAddress) {
