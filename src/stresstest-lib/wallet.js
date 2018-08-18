@@ -307,7 +307,7 @@ class StresstestWallet {
         this.appendLog(`Fanout tx confirmed. Starting broadcast...`)
 
         // Set max tx to send in parallel
-        let maxParallelTx = walletChains.length < 30 ? walletChains.length : 30;
+        let maxParallelTx = walletChains.length < 20 ? walletChains.length : 20;
 
         // Tx to send generator
         let allTxToSend = stUtils.createChainedTransactions(walletChains, refundAddress, maxParallelTx)
