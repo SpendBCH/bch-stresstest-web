@@ -180,7 +180,7 @@ class Stresstest extends Component {
       const { classes } = this.props
 
     let numTxToSend = this.props.wallet ? this.props.wallet.prepData.numTxToSend : 0
-    let headerMessage = numTxToSend > 0 ? "Ready to send " + numTxToSend + " transactions" : "Deposit between 15k to 650k satoshis (~$0.15 to $5) to start"
+    let headerMessage = numTxToSend > 0 ? "Ready to send " + numTxToSend + " transactions" : "Deposit 15,000 to 1,300,000 satoshis (~$0.08 to $7) to send 48 to 4,612 transactions"
 
     return (<div>
       <Paper className={classes.root} elevation={3}>
