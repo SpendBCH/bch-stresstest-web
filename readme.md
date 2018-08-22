@@ -1,6 +1,6 @@
 # Usage
 
-Current build available at: https://spendbch.github.io/bch-stresstest-web/
+Current build available at: https://www.scale.cash/
 
 ```sh
 npm install
