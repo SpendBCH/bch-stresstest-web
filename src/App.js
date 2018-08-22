@@ -67,8 +67,6 @@ class App extends Component {
           <hr/>
           <Stresstest wallet={this.state.wallet} startStresstest={this.startStresstest} />
         </div>
-        <div>
-        </div>
       </div>
     );
   }

@@ -132,8 +132,15 @@ class Stresstest extends Component {
   renderStresstest = () => {
     const { classes } = this.props
 
-    let log = this.props.wallet.log.slice(0).map((l, index) => {
-      return <div key={index}>{l}</div>
+    let log = this.props.wallet.log.slice(0).map((logLine, index) => {
+      let txidIndex = logLine.indexOf("txid: ")
+      if (txidIndex != -1) {
+        let prefix = logLine.slice(0, txidIndex)
+        let txid = logLine.slice(txidIndex + 6)
+        return <div key={index}>{prefix}<a className={this.props.classes.credits} href={"https://explorer.bitcoin.com/bch/tx/" + txid}>{txid}</a></div>
+      } else {
+        return <div key={index}>{logLine}</div>
+      }
     })
 
     let runningMessage = `Sending ${ this.props.wallet.prepData.numTxToSend } transactions. Keep your browser open.`
@@ -180,7 +187,7 @@ class Stresstest extends Component {
       const { classes } = this.props
 
     let numTxToSend = this.props.wallet ? this.props.wallet.prepData.numTxToSend : 0
-    let headerMessage = numTxToSend > 0 ? "Ready to send " + numTxToSend + " transactions" : "Deposit 15,000 to 1,300,000 satoshis (~$0.08 to $7) to send 48 to 4,612 transactions"
+    let headerMessage = numTxToSend > 0 ? "Ready to send " + numTxToSend + " transactions" : "Deposit 15,000 to 1,300,000 satoshis (~$0.08 to $7) to start"
 
     return (<div>
       <Paper className={classes.root} elevation={3}>

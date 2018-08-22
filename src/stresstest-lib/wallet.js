@@ -298,7 +298,7 @@ class StresstestWallet {
         }
         this.txSentThisRun += 1
         this.totalTxSent += 1
-        this.appendLog("Fanout transaction complete. Txid: " + splitTxid)
+        this.appendLog("Fanout transaction complete. txid: " + splitTxid)
 
         // Wait for first confirmation before stress testing to avoid mempool chain limit
         this.appendLog("Waiting for first confirmation of fanout tx...")
