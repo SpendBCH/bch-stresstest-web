@@ -1,3 +1,4 @@
+const axios = require('axios')
 let BITBOXCli = require('bitbox-cli/lib/bitbox-cli').default;
 let BITBOX
 if (window.scaleCashSettings.isTestnet) {
@@ -11,8 +12,6 @@ if (window.scaleCashSettings.isTestnet) {
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 class Network {
-    // TODO: Retry & throttling for network apis
-
     static async getUtxo(address) {
         // throttle calls to api
         await sleep(1000)
@@ -362,6 +361,17 @@ class Network {
                 reject(err)
             })
         })
+    }
+
+    static async getTransactions24h() {
+        try {
+            const response = await axios.get('https://api.blockchair.com/bitcoin-cash/stats')
+            console.log(response)
+
+            return parseInt(response.data.data.transactions_24h).toLocaleString()
+        } catch (error) {
+            return "unknown"
+        }
     }
 }
 

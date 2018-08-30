@@ -125,7 +125,8 @@ class Stresstest extends Component {
   renderFooterStats = () => {
     return (<div>
       <b>Mempool Size: </b> { this.props.wallet.mempoolSize } transactions <br/>
-      <b>Your Total TX Sent: </b> { this.props.wallet.totalTxSent } transactions
+      <b>Your Total TX Sent: </b> { this.props.wallet.totalTxSent } transactions <br/>
+      <b>TX in past 24 hours: </b> { this.props.wallet.transactions24h } transactions (provided by <a className={this.props.classes.credits} href="https://blockchair.com">blockchair.com</a>)
     </div>);
   }
 

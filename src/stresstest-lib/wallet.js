@@ -66,6 +66,7 @@ class StresstestWallet {
         // this.searchForOrphanUtxos(this.hdNode)
         this.pollForDeposit()
         this.pollForMempoolinfo()
+        this.pollForTransactions24h()
     }
 
     listen = (listener) => {
@@ -134,6 +135,21 @@ class StresstestWallet {
             // Backoff a few additional seconds after failure
             await sleep(30 * 1000)
           }
+        }
+    }
+
+    pollForTransactions24h = async () => {
+        while (true) {
+          try {
+            this.transactions24h = await network.getTransactions24h()
+            this.publish()
+          } catch (ex) {
+            // Backoff a few additional seconds after failure
+            await sleep(30 * 1000)
+          }
+
+          // poll every 60 seconds
+          await sleep(60 * 1000)
         }
     }
 
