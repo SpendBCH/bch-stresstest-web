@@ -366,7 +366,6 @@ class Network {
     static async getTransactions24h() {
         try {
             const response = await axios.get('https://api.blockchair.com/bitcoin-cash/stats')
-            console.log(response)
 
             return parseInt(response.data.data.transactions_24h).toLocaleString()
         } catch (error) {
