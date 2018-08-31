@@ -126,7 +126,7 @@ class Stresstest extends Component {
     return (<div>
       <b>Mempool Size: </b> { this.props.wallet.mempoolSize } transactions <br/>
       <b>Your Total TX Sent: </b> { this.props.wallet.totalTxSent } transactions <br/>
-      <b>TX in past 24 hours: </b> { this.props.wallet.transactions24h } transactions (provided by <a className={this.props.classes.credits} href="https://blockchair.com">blockchair.com</a>)
+      <b>TX in past 24 hours: </b> { this.props.wallet.transactions24h } transactions (provided by <a target="_blank" rel="noopener noreferrer" className={this.props.classes.credits} href="https://blockchair.com">blockchair.com</a>)
     </div>);
   }
 
@@ -138,7 +138,7 @@ class Stresstest extends Component {
       if (txidIndex != -1) {
         let prefix = logLine.slice(0, txidIndex)
         let txid = logLine.slice(txidIndex + 6)
-        return <div key={index}>{prefix}<a className={this.props.classes.credits} href={"https://explorer.bitcoin.com/bch/tx/" + txid}>{txid}</a></div>
+        return <div key={index}>{prefix}<a target="_blank" rel="noopener noreferrer" className={this.props.classes.credits} href={"https://explorer.bitcoin.com/bch/tx/" + txid}>{txid}</a></div>
       } else {
         return <div key={index}>{logLine}</div>
       }
