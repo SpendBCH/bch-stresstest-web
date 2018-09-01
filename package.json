@@ -10,7 +10,7 @@
     "@material-ui/core": "^1.5.0",
     "@material-ui/icons": "^1.1.0",
     "axios": "^0.18.0",
-    "bitbox-cli": "^1.5.8",
+    "bitbox-cli": "^1.5.9",
     "chainfeed": "^0.1.0",
     "qrcode.react": "^0.8.0",
     "react": "^16.4.2",
